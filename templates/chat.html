@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediBot AI Assistant</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="chat-wrapper">
+        <header class="chat-header">
+            <span class="status-dot"></span>
+            <h2>MediBot AI Assistant</h2>
+        </header>
+
+        <main class="chat-body" id="chat-box">
+            <div class="message bot-message">
+                Hello! I am your AI medical assistant. Please describe your symptoms or ask any health-related questions. 
+                <br><br>
+                <em>Note: I am an AI, not a doctor. In case of a medical emergency, please call your local emergency services immediately.</em>
+            </div>
+            </main>
+
+        <footer class="chat-footer">
+            <input type="text" id="user-input" class="chat-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-btn" class="send-btn">Send</button>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatBox = document.getElementById("chat-box");
+            const userInput = document.getElementById("user-input");
+            const sendBtn = document.getElementById("send-btn");
+
+            function sendMessage() {
+                const rawText = userInput.value.trim();
+                if (!rawText) return; // Do nothing if input is empty
+
+                // 1. Create and show the user's message on the screen
+                const userMsgHtml = `<div class="message user-message">${rawText}</div>`;
+                chatBox.insertAdjacentHTML('beforeend', userMsgHtml);
+                
+                // Clear the input box and scroll to the bottom
+                userInput.value = "";
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // 2. Prepare the data to send to Flask
+                const formData = new FormData();
+                formData.append("msg", rawText);
+
+                // 3. Send the message to your Flask '/get' route
+                fetch("/get", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.text()) // Wait for Flask to reply
+                .then(botResponse => {
+                    // 4. Create and show the bot's response on the screen
+                    const botMsgHtml = `<div class="message bot-message">${botResponse}</div>`;
+                    chatBox.insertAdjacentHTML('beforeend', botMsgHtml);
+                    
+                    // Scroll to the bottom again to see the new message
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch(error => {
+                    console.error("Error communicating with backend:", error);
+                    const errorMsgHtml = `<div class="message bot-message" style="color: red;">Sorry, I am having trouble connecting to the server.</div>`;
+                    chatBox.insertAdjacentHTML('beforeend', errorMsgHtml);
+                });
+            }
+
+            // Trigger the function when the Send button is clicked
+            sendBtn.addEventListener("click", sendMessage);
+
+            // Also trigger the function when the "Enter" key is pressed
+            userInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
